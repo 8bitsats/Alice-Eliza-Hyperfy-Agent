@@ -2,11 +2,11 @@ pygame==2.5.0
 numpy==1.24.3
 pillowcase==2.0.0
 python-dotenv==1.0.0
-langchain==0.0.267
+langchain==0.2.5
 pyphysx==0.2.5
 speech_recognition==3.10.0
 pyttsx3==2.90
-requests==2.31.0
-pydantic==2.0.3
+requests==2.32.2
+pydantic==2.4.0
 pyaudio==0.2.13
 json5==0.9.14
