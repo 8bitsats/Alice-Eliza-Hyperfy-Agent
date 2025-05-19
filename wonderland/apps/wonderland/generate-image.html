@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Wonderland Icon</title>
+</head>
+<body>
+  <canvas id="canvas" width="256" height="256" style="display:none;"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Fill background with a light blue color (like sky)
+    ctx.fillStyle = '#87CEFA';
+    ctx.fillRect(0, 0, 256, 256);
+    
+    // Draw ground (green)
+    ctx.fillStyle = '#7cbb78';
+    ctx.fillRect(0, 128, 256, 128);
+    
+    // Draw a mushroom
+    // Stem
+    ctx.fillStyle = '#f5d7b2';
+    ctx.fillRect(108, 88, 40, 80);
+    
+    // Cap
+    ctx.fillStyle = '#e05e5e';
+    ctx.beginPath();
+    ctx.ellipse(128, 88, 80, 30, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw white spots on the mushroom cap
+    ctx.fillStyle = '#FFFFFF';
+    [
+      [88, 78],
+      [158, 83],
+      [128, 68],
+      [108, 98],
+      [168, 98]
+    ].forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+    
+    // Create a download link
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'image.png';
+    link.href = dataUrl;
+    link.textContent = 'Download PNG';
+    document.body.appendChild(link);
+    link.click();
+  </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "wonderland",
+  "version": "1.0.0",
+  "description": "An Alice in Wonderland themed world for Eliza in Hyperfy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hyperfy",
+    "alice",
+    "wonderland",
+    "3d",
+    "virtual-world"
+  ],
+  "dependencies": {
+    "hyperfy": "latest"
+  },
+  "author": "",
+  "license": "ISC"
+}
