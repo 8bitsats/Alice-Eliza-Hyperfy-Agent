@@ -3,6 +3,29 @@ set -e
 
 # Onboarding setup script for Alice-Eliza-Hyperfy-Agent
 
+copy_env() {
+  local dir="$1"
+  local example_file="$dir/.env.example"
+  local env_file="$dir/.env"
+  if [ -f "$example_file" ]; then
+    if [ ! -f "$env_file" ]; then
+      cp "$example_file" "$env_file"
+      echo "  Copied $example_file to $env_file. Please fill in your secrets."
+    else
+      echo "  $env_file already exists. Skipping copy."
+    fi
+  else
+    echo "  WARNING: $example_file not found. Please create it if needed."
+  fi
+}
+
+echo "[0/4] Setting up environment files..."
+copy_env "."
+copy_env "AliceLiveKitVoice"
+copy_env "pope"
+copy_env "python/hyperfy_agent_python"
+copy_env "python/python_wonderland"
+
 echo "[1/4] Installing Node.js dependencies..."
 if command -v pnpm &> /dev/null; then
   pnpm install
