@@ -51,8 +51,8 @@
     "vitest": "2.1.5"
   },
   "scripts": {
-    "start": "elizaos start",
-    "dev": "elizaos dev",
+    "start": "node main.mjs",
+    "dev": "node main.mjs",
     "build": "tsup && cp src/plugin-hyperfy/physx/physx-js-webidl.js src/plugin-hyperfy/physx/physx-js-webidl.wasm dist/",
     "lint": "prettier --write ./src",
     "test": "vitest run",
@@ -60,6 +60,7 @@
     "test:watch": "vitest",
     "format": "prettier --write ./src",
     "format:check": "prettier --check ./src",
+    "build:ts": "tsc",
     "hyperfy:connect": "node main.mjs"
   },
   "publishConfig": {
