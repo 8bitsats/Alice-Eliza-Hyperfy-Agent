@@ -2,6 +2,43 @@
 
 > *"Curiouser and curiouser!" cried Alice. "Now I'm exploring the metaverse!"*
 
+---
+
+## Getting Started as a New Developer
+
+1. **Install dependencies:**
+   ```sh
+   npm install
+   # or
+   pnpm install
+   ```
+
+2. **Run the main Alice agent (JavaScript):**
+   ```sh
+   node main.mjs
+   ```
+
+3. **TypeScript migration workflow:**
+   - Edit or add files in `src/` as `.ts` files.
+   - Build TypeScript to JavaScript:
+     ```sh
+     npx tsc --project tsconfig.build.json
+     # or
+     npm run build:ts
+     ```
+   - Run the built JS (for example):
+     ```sh
+     node dist/index.js
+     ```
+   - As you migrate, port logic from `main.mjs` and `simple-agent/` into `src/`.
+
+4. **Other agents:**
+   - **Pope agent:** See `pope/README.md` and run with `sh pope/run-pope.sh`
+   - **LiveKit voice agent:** See `AliceLiveKitVoice/README.md`
+   - **Python agent:** See `python/hyperfy_agent_python/README.md`
+
+---
+
 ## Overview
 
 This monorepo brings together multiple advanced AI agents and supporting systems for the Hyperfy metaverse, including:
