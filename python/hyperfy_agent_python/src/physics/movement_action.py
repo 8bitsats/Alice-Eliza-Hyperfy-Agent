@@ -87,8 +87,15 @@ class MovementAction(Action):
             
         # Calculate new position
         new_position = [a + (b * move_distance) for a, b in zip(current_pos, direction)]
+
+        # Calculate yaw for agent orientation
+        if direction[0] != 0 or direction[2] != 0: # Avoid atan2(0,0)
+            yaw_radians = math.atan2(direction[0], direction[2])
+            yaw_degrees = math.degrees(yaw_radians)
+            # Assuming ground movement, so pitch and roll are 0
+            self.agent.rotation = [0, yaw_degrees, 0]
         
-        # Update agent position
+        # Update agent position and rotation
         self._move_agent(new_position)
         
         return False
@@ -103,10 +110,15 @@ class MovementAction(Action):
         
         if physics_engine and hasattr(physics_engine, 'update_agent_position'):
             # Use physics engine to move
-            physics_engine.update_agent_position(self.agent.name, new_position)
+            physics_engine.update_agent_position(self.agent.name, new_position, self.agent.rotation)
         else:
             # Direct movement
             self.agent.position = new_position
+            # If there's no physics engine, we still want to update rotation if it's being tracked
+            if hasattr(self.agent, 'rotation'):
+                 # The rotation was already updated in the update() method.
+                 # This line is more of a placeholder if direct rotation updates were needed here.
+                 pass
             
     def _initial_distance(self) -> float:
         """
