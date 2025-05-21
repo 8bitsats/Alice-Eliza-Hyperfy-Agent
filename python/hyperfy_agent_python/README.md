@@ -11,8 +11,10 @@ Designed for the upcoming agent PVP challenge, this starter kit enables anyone t
 - **Voice Capabilities**: Speech recognition and text-to-speech for natural interactions
 - **World State Management**: Track objects, players, and environment state
 - **Action System**: Prioritized, queueable actions for agent behaviors
+    - Extended with actions for wandering, stopping, and item interaction (use/unuse via placeholders).
 - **Physics Integration**: Physics simulation using PyPhysX for realistic agent movement
 - **LangChain Integration**: Optional integration with LangChain for AI-powered responses
+- **Enhanced Agent Realism**: Agent now orients itself to face its direction of movement and Alice offers proactive greetings.
 
 ## Architecture
 
@@ -44,8 +46,9 @@ json5==0.9.14
 
 1. Clone the repository or copy the files to your project directory
 
-2. Install the required dependencies:
-   ```
+2. Navigate to the `python/hyperfy_agent_python/` directory and install the required dependencies:
+   ```bash
+   cd python/hyperfy_agent_python
    pip install -r requirements.txt
    ```
 
@@ -54,7 +57,7 @@ json5==0.9.14
    export OPENAI_API_KEY="your-api-key-here"
    ```
    
-   Or create a `.env` file in the project root with:
+   Or create a `.env` file in the `python/hyperfy_agent_python/` directory with:
    ```
    OPENAI_API_KEY=your-api-key-here
    ```
@@ -165,6 +168,7 @@ The `AliceAgent` class demonstrates how to create a character with personality:
 - Event handling for world interactions
 - Physics integration for movement
 - Idle behaviors and custom events
+Alice is now more interactive! She can understand commands to wander, stop, and attempt to use items. She also offers proactive greetings to nearby users and faces her direction of movement.
 
 ## Parity with Eliza TypeScript Implementation
 
@@ -173,6 +177,8 @@ This starter kit aims to provide feature parity with the [Eliza TypeScript imple
 - **Same Core Features**: Voice, world state, actions, and physics
 - **Python Ecosystem**: Easy integration with ML libraries like LangChain, PyTorch, etc.
 - **Simplified API**: Streamlined API design while maintaining similar capabilities
+- **Movement Mechanism**: The Python agent achieves movement by defining its target position and orientation, which are then reflected in its local PyPhysX simulation. The TypeScript version, by contrast, simulates keyboard inputs to drive the Hyperfy client's character controller. While the underlying mechanism differs, observable behaviors like facing the direction of movement are aligned.
+- **Item Interaction**: `UseItem` and `UnuseItem` actions are defined in Python but rely on a Hyperfy communication layer (connector) for actual execution in the Hyperfy world. The specific connector implementation is outside the scope of this starter kit's core logic.
 
 ## Contributing
 

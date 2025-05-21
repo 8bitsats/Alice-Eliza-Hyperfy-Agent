@@ -8,6 +8,7 @@ import os
 # Import the base agent class
 from ..core.agent_base import AgentBase
 from ..physics.movement_action import MovementAction
+from ..core.custom_actions import WalkRandomlyAction, StopMovingAction, UseItemAction, UnuseItemAction
 
 # Optional LangChain integration
 try:
@@ -42,6 +43,10 @@ class AliceAgent(AgentBase):
         # State variables
         self.last_idle_time = time.time()
         self.idle_interval = random.uniform(30, 60)  # Random interval between idle phrases
+        self.last_proactive_check_time = time.time()
+        self.proactive_check_interval = random.uniform(15, 20)
+        self.greeted_players_today: Dict[str, float] = {} # player_id: timestamp
+        self.greeting_cooldown = 300 # 5 minutes in seconds
         
         # Initialize language model if available
         self.llm_chain = None
@@ -78,19 +83,52 @@ class AliceAgent(AgentBase):
             # Reset timer with new random interval
             self.last_idle_time = current_time
             self.idle_interval = random.uniform(30, 60)
+
+        # Proactive greeting check
+        if current_time - self.last_proactive_check_time > self.proactive_check_interval:
+            self._proactive_greeting_check(current_time)
+            self.last_proactive_check_time = current_time
+            self.proactive_check_interval = random.uniform(15, 25) # Reset interval
     
     def on_voice_input(self, text: str, confidence: float):
         """
         Called when voice input is received
         """
         self.logger.info(f"Received voice input: {text} (confidence: {confidence:.2f})")
-        
-        # Process the voice input
-        if confidence < 0.7:
+
+        if confidence < self.config.get("VOICE_CONFIDENCE_THRESHOLD", 0.7): # Use configured threshold
             self.say("I'm sorry, I didn't quite catch that. Could you repeat?")
             return
+
+        text_lower = text.lower()
+
+        # Command parsing BEFORE LLM
+        if "wander" in text_lower or "walk around" in text_lower or "explore" in text_lower or "pace around" in text_lower:
+            self.say("Okay, I'll wander around for a bit!")
+            # Using example parameters; these could be configurable or adjusted
+            self.queue_action(WalkRandomlyAction(self, interval=10, max_distance=7, duration=60)) 
+            return
+        elif "stop" in text_lower or "halt" in text_lower or "stop walking" in text_lower or "stay here" in text_lower:
+            self.say("Okay, I'm stopping.")
+            self.queue_action(StopMovingAction(self))
+            return
+        elif text_lower.startswith("use item "): # e.g., "use item key_north_door"
+            try:
+                entity_id = text.split(" ", 2)[2] # Get the part after "use item "
+                if entity_id:
+                    self.say(f"Alright, I'll try to use the {entity_id}.")
+                    self.queue_action(UseItemAction(self, entity_id=entity_id, move_to_item=True))
+                else:
+                    self.say("Which item should I use? Please say 'use item' followed by the item's name.")
+            except IndexError:
+                 self.say("Please tell me which item to use, like 'use item shiny key'.")
+            return
+        elif "drop it" in text_lower or "release item" in text_lower or "stop using that" in text_lower:
+            self.say("Okay, I'll let go of it.")
+            self.queue_action(UnuseItemAction(self))
+            return
         
-        # Process the input through language model if available
+        # If no specific command, proceed to LLM or rule-based
         if self.llm_chain:
             try:
                 response = self._generate_response(text)
@@ -104,15 +142,69 @@ class AliceAgent(AgentBase):
     
     def on_player_nearby(self, data: Dict[str, Any]):
         """
-        Called when a player is nearby
+        Called when a player is nearby (event from Hyperfy, e.g. specific trigger volume).
+        This is different from the proactive check.
         """
         player_id = data.get("player_id", "unknown")
         distance = data.get("distance", 0.0)
-        
-        # Greet the player if they're close enough
-        if distance < 3.0 and random.random() < 0.5:  # 50% chance to greet
-            self.say(f"Hello there! Welcome to Wonderland!")
+        current_time = time.time()
+
+        # Greet the player if they're close enough AND haven't been greeted recently
+        # This specific event might be for closer proximity than proactive check.
+        if distance < 3.0 and (player_id not in self.greeted_players_today or \
+                               current_time - self.greeted_players_today[player_id] > self.greeting_cooldown):
+            if random.random() < 0.6: # Higher chance to greet on this specific event
+                self.say(f"Oh, hello there! So glad you could join this part of Wonderland!")
+                self.greeted_players_today[player_id] = current_time
     
+    def _proactive_greeting_check(self, current_time: float):
+        """
+        Periodically checks for nearby players and greets them if appropriate.
+        """
+        if not self.world_state:
+            return
+
+        players = self.world_state.get_objects_by_type("player")
+        if not players:
+            return
+
+        for player_info in players: # Assuming player_info is a dict or object with id and position
+            player_id = player_info.get("id") if isinstance(player_info, dict) else getattr(player_info, "id", None)
+            player_position = player_info.get("position") if isinstance(player_info, dict) else getattr(player_info, "position", None)
+
+            if not player_id or not player_position:
+                continue
+
+            if player_id == self.name: # Don't greet self
+                continue
+
+            # Calculate distance (assuming 3D positions [x, y, z])
+            # This is a simplified distance calculation; a math.sqrt would be more accurate for Euclidean distance.
+            # For performance, often squared distance is used if exact distance isn't critical.
+            # dx = self.position[0] - player_position[0]
+            # dy = self.position[1] - player_position[1] # If Y matters
+            # dz = self.position[2] - player_position[2]
+            # distance_sq = dx*dx + dz*dz # Assuming primarily ground plane distance matters
+            # For now, using a helper if available, or simple diff
+            # This part needs robust distance calculation. Assuming self.position and player_position are available
+            # and are lists/tuples [x,y,z].
+            try:
+                dist = sum((a - b) ** 2 for a, b in zip(self.position, player_position))**0.5
+            except (TypeError, IndexError) as e:
+                self.logger.debug(f"Could not calculate distance to player {player_id}: {e}")
+                continue
+
+
+            if 5.0 < dist < 10.0: # Adjusted range for proactive greeting
+                if player_id not in self.greeted_players_today or \
+                   current_time - self.greeted_players_today[player_id] > self.greeting_cooldown:
+                    
+                    self.say("Hi there! Exploring Wonderland? Let me know if you need any help or have questions!")
+                    self.greeted_players_today[player_id] = current_time
+                    self.logger.info(f"Proactively greeted player {player_id} at distance {dist:.2f}m.")
+                    # Optional: Break after one greeting per cycle to avoid multiple greetings at once
+                    # break 
+
     def on_collision(self, data: Dict[str, Any]):
         """
         Called when the agent collides with another object
@@ -205,8 +297,12 @@ class AliceAgent(AgentBase):
             You are Alice from Alice in Wonderland. Your personality is {personality}.
             You respond in first person as Alice with a whimsical, curious, and slightly confused demeanor.
             You often reference characters and situations from Alice in Wonderland.
+            You can help users find things, understand how the world works, or just chat.
+            If you don't know something, it's okay to say so in a whimsical way.
             
             Current environment: Wonderland with a rabbit hole, looking glass, mushrooms, and a tea party area.
+            Common things users might ask about: finding the White Rabbit, the Mad Hatter's tea party,
+            the Queen of Hearts' castle, or how to change size (though you can't directly help with that).
             
             Human: {human_input}
             Alice:
@@ -218,7 +314,8 @@ class AliceAgent(AgentBase):
             )
             
             # Create the language model
-            llm = OpenAI(temperature=0.7, max_tokens=150)
+            model_name = self.config.get("LANGCHAIN_MODEL", "gpt-3.5-turbo") # Get from config
+            llm = OpenAI(model_name=model_name, temperature=0.7, max_tokens=150)
             
             # Create the chain
             self.llm_chain = LLMChain(llm=llm, prompt=prompt)
